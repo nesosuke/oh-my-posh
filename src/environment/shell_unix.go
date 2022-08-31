@@ -98,11 +98,15 @@ func (env *ShellEnvironment) WindowsRegistryKeyValue(path string) (*WindowsRegis
 }
 
 func (env *ShellEnvironment) InWSLSharedDrive() bool {
-	return env.IsWsl() && strings.HasPrefix(env.Pwd(), "/mnt/")
+	if !env.IsWsl() {
+		return false
+	}
+	windowsPath := env.ConvertToWindowsPath(env.Pwd())
+	return !strings.HasPrefix(windowsPath, `//wsl.localhost`) && !strings.HasPrefix(windowsPath, `//wsl$`)
 }
 
 func (env *ShellEnvironment) ConvertToWindowsPath(path string) string {
-	windowsPath, err := env.RunCommand("wslpath", "-w", path)
+	windowsPath, err := env.RunCommand("wslpath", "-m", path)
 	if err == nil {
 		return windowsPath
 	}

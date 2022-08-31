@@ -3,14 +3,15 @@ package engine
 import (
 	"errors"
 	"fmt"
+	"runtime/debug"
+	"strings"
+	"time"
+
 	"oh-my-posh/environment"
 	"oh-my-posh/properties"
 	"oh-my-posh/segments"
 	"oh-my-posh/shell"
 	"oh-my-posh/template"
-	"runtime/debug"
-	"strings"
-	"time"
 )
 
 // Segment represent a single segment and it's configuration
@@ -108,6 +109,8 @@ const (
 	FLUTTER SegmentType = "flutter"
 	// FOSSIL writes the fossil status
 	FOSSIL SegmentType = "fossil"
+	// GCP writes the active GCP context
+	GCP SegmentType = "gcp"
 	// GIT represents the git status and information
 	GIT SegmentType = "git"
 	// GOLANG writes which go version is currently active
@@ -281,6 +284,7 @@ func (segment *Segment) mapSegmentWithWriter(env environment.Environment) error 
 		EXIT:          &segments.Exit{},
 		FLUTTER:       &segments.Flutter{},
 		FOSSIL:        &segments.Fossil{},
+		GCP:           &segments.Gcp{},
 		GIT:           &segments.Git{},
 		GOLANG:        &segments.Golang{},
 		HASKELL:       &segments.Haskell{},
@@ -391,11 +395,11 @@ func (segment *Segment) SetText() {
 	if segment.Interactive {
 		return
 	}
+	// we have to do this to prevent bash/zsh from misidentifying escape sequences
 	switch segment.env.Shell() {
-	case shell.BASH, shell.FISH:
-		segment.text = strings.ReplaceAll(segment.text, `\`, `\\`)
+	case shell.BASH:
+		segment.text = strings.NewReplacer("`", "\\`", `\`, `\\`).Replace(segment.text)
 	case shell.ZSH:
-		segment.text = strings.ReplaceAll(segment.text, `%`, `%%`)
+		segment.text = strings.NewReplacer("`", "\\`", `%`, `%%`).Replace(segment.text)
 	}
-	segment.text = strings.ReplaceAll(segment.text, "`", "'")
 }

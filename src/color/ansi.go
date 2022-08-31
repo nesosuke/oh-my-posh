@@ -266,6 +266,13 @@ func (a *Ansi) ClearAfter() string {
 }
 
 func (a *Ansi) Title(title string) string {
+	// we have to do this to prevent bash/zsh from misidentifying escape sequences
+	switch a.shell {
+	case shell.BASH:
+		title = strings.NewReplacer("`", "\\`", `\`, `\\`).Replace(title)
+	case shell.ZSH:
+		title = strings.NewReplacer("`", "\\`", `%`, `%%`).Replace(title)
+	}
 	return fmt.Sprintf(a.title, title)
 }
 
