@@ -1,9 +1,15 @@
 export POSH_THEME=::CONFIG::
+export POSH_PID=$$
 export POWERLINE_COMMAND="oh-my-posh"
 export CONDA_PROMPT_MODIFIER=false
 
 # set secondary prompt
 PS2="$(::OMP:: print secondary --config="$POSH_THEME" --shell=zsh)"
+
+# template function for context loading
+function set_poshcontext() {
+  return
+}
 
 function prompt_ohmyposh_preexec() {
   omp_start_time=$(::OMP:: get millis)
@@ -14,9 +20,10 @@ function prompt_ohmyposh_precmd() {
   omp_stack_count=${#dirstack[@]}
   omp_elapsed=-1
   if [ $omp_start_time ]; then
-    omp_now=$(::OMP:: get millis)
+    omp_now=$(::OMP:: get millis --shell=zsh)
     omp_elapsed=$(($omp_now-$omp_start_time))
   fi
+  set_poshcontext
   eval "$(::OMP:: print primary --config="$POSH_THEME" --error="$omp_last_error" --execution-time="$omp_elapsed" --stack-count="$omp_stack_count" --eval --shell=zsh --shell-version="$ZSH_VERSION")"
   unset omp_start_time
   unset omp_now
@@ -101,6 +108,18 @@ function _posh-zle-line-init() {
 
 if [[ "::TRANSIENT::" = "true" ]]; then
   zle -N zle-line-init _posh-zle-line-init
+
+  # restore broken key bindings
+  # https://github.com/JanDeDobbeleer/oh-my-posh/discussions/2617#discussioncomment-3911044
+  bindkey '^[[F' end-of-line
+  bindkey '^[[H' beginning-of-line
+  _widgets=$(zle -la)
+  if [[ -n "${_widgets[(r)down-line-or-beginning-search]}" ]]; then
+    bindkey '^[[B' down-line-or-beginning-search
+  fi
+  if [[ -n "${_widgets[(r)up-line-or-beginning-search]}" ]]; then
+    bindkey '^[[A' up-line-or-beginning-search
+  fi
 fi
 
 # legacy functions for backwards compatibility

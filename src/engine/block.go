@@ -2,7 +2,7 @@ package engine
 
 import (
 	"oh-my-posh/color"
-	"oh-my-posh/environment"
+	"oh-my-posh/platform"
 	"oh-my-posh/shell"
 	"sync"
 	"time"
@@ -22,7 +22,7 @@ const (
 	Prompt BlockType = "prompt"
 	// LineBreak creates a line break in the prompt
 	LineBreak BlockType = "newline"
-	// RPrompt a right aligned prompt in ZSH and Powershell
+	// RPrompt is a right aligned prompt
 	RPrompt BlockType = "rprompt"
 	// Left aligns left
 	Left BlockAlignment = "left"
@@ -47,27 +47,30 @@ type Block struct {
 	HorizontalOffset int `json:"horizontal_offset,omitempty"`
 	VerticalOffset   int `json:"vertical_offset,omitempty"`
 
-	env                   environment.Environment
+	MaxWidth int `json:"max_width,omitempty"`
+	MinWidth int `json:"min_width,omitempty"`
+
+	env                   platform.Environment
 	writer                color.Writer
 	ansi                  *color.Ansi
 	activeSegment         *Segment
 	previousActiveSegment *Segment
 }
 
-func (b *Block) Init(env environment.Environment, writer color.Writer, ansi *color.Ansi) {
+func (b *Block) Init(env platform.Environment, writer color.Writer, ansi *color.Ansi) {
 	b.env = env
 	b.writer = writer
 	b.ansi = ansi
 	b.executeSegmentLogic()
 }
 
-func (b *Block) InitPlain(env environment.Environment, config *Config) {
+func (b *Block) InitPlain(env platform.Environment, config *Config) {
 	b.ansi = &color.Ansi{}
 	b.ansi.InitPlain()
 	b.writer = &color.AnsiWriter{
 		Ansi:               b.ansi,
 		TerminalBackground: shell.ConsoleBackgroundColor(env, config.TerminalBackground),
-		AnsiColors:         config.MakeColors(env),
+		AnsiColors:         config.MakeColors(),
 	}
 	b.env = env
 	b.executeSegmentLogic()
@@ -75,6 +78,9 @@ func (b *Block) InitPlain(env environment.Environment, config *Config) {
 
 func (b *Block) executeSegmentLogic() {
 	if b.env.Flags().Debug {
+		return
+	}
+	if shouldHideForWidth(b.env, b.MinWidth, b.MaxWidth) {
 		return
 	}
 	b.setEnabledSegments()

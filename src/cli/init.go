@@ -3,7 +3,7 @@ package cli
 import (
 	"fmt"
 	"oh-my-posh/engine"
-	"oh-my-posh/environment"
+	"oh-my-posh/platform"
 	"oh-my-posh/shell"
 
 	"github.com/spf13/cobra"
@@ -12,6 +12,7 @@ import (
 var (
 	print  bool
 	strict bool
+	manual bool
 
 	initCmd = &cobra.Command{
 		Use:   "init [bash|zsh|fish|powershell|pwsh|cmd|nu] --config ~/.mytheme.omp.json",
@@ -42,17 +43,19 @@ See the documentation to initialize your shell: https://ohmyposh.dev/docs/instal
 func init() { //nolint:gochecknoinits
 	initCmd.Flags().BoolVarP(&print, "print", "p", false, "print the init script")
 	initCmd.Flags().BoolVarP(&strict, "strict", "s", false, "run in strict mode")
+	initCmd.Flags().BoolVarP(&manual, "manual", "m", false, "enable/disable manual mode")
 	_ = initCmd.MarkPersistentFlagRequired("config")
-	rootCmd.AddCommand(initCmd)
+	RootCmd.AddCommand(initCmd)
 }
 
 func runInit(shellName string) {
-	env := &environment.ShellEnvironment{
+	env := &platform.Shell{
 		Version: cliVersion,
-		CmdFlags: &environment.Flags{
+		CmdFlags: &platform.Flags{
 			Shell:  shellName,
 			Config: config,
 			Strict: strict,
+			Manual: manual,
 		},
 	}
 	env.Init()
@@ -61,6 +64,11 @@ func runInit(shellName string) {
 	shell.Transient = cfg.TransientPrompt != nil
 	shell.ErrorLine = cfg.ErrorLine != nil || cfg.ValidLine != nil
 	shell.Tooltips = len(cfg.Tooltips) > 0
+	for _, block := range cfg.Blocks {
+		if block.Type == engine.RPrompt {
+			shell.RPrompt = true
+		}
+	}
 	if print {
 		init := shell.PrintInit(env)
 		fmt.Print(init)

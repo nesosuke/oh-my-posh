@@ -2,8 +2,8 @@ package segments
 
 import (
 	"errors"
-	"oh-my-posh/environment"
 	"oh-my-posh/mock"
+	"oh-my-posh/platform"
 	"oh-my-posh/properties"
 	"testing"
 
@@ -79,6 +79,7 @@ func TestPythonTemplate(t *testing.T) {
 
 	for _, tc := range cases {
 		env := new(mock.MockedEnvironment)
+		env.On("GOOS").Return("")
 		env.On("HasCommand", "python").Return(true)
 		env.On("CommandPath", mock2.Anything).Return(tc.PythonPath)
 		env.On("RunCommand", "python", []string{"--version"}).Return("Python 3.8.4", nil)
@@ -97,7 +98,7 @@ func TestPythonTemplate(t *testing.T) {
 			UsePythonVersionFile:    true,
 			DisplayMode:             DisplayModeAlways,
 		}
-		env.On("TemplateCache").Return(&environment.TemplateCache{
+		env.On("TemplateCache").Return(&platform.TemplateCache{
 			Env: make(map[string]string),
 		})
 		python := &Python{}
@@ -118,12 +119,13 @@ func TestPythonPythonInContext(t *testing.T) {
 
 	for _, tc := range cases {
 		env := new(mock.MockedEnvironment)
-		env.On("PathSeparator").Return("")
+		env.On("GOOS").Return("")
+		env.On("PathSeparator").Return("/")
 		env.On("Getenv", "VIRTUAL_ENV").Return(tc.VirtualEnvName)
 		env.On("Getenv", "CONDA_ENV_PATH").Return("")
 		env.On("Getenv", "CONDA_DEFAULT_ENV").Return("")
 		env.On("Getenv", "PYENV_VERSION").Return("")
-		env.On("HasParentFilePath", ".python-version").Return(&environment.FileInfo{}, errors.New("no match at root level"))
+		env.On("HasParentFilePath", ".python-version").Return(&platform.FileInfo{}, errors.New("no match at root level"))
 		python := &Python{}
 		python.Init(properties.Map{}, env)
 		python.loadContext()

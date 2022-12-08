@@ -7,11 +7,14 @@ import (
 	"strings"
 	"time"
 
-	"oh-my-posh/environment"
+	"oh-my-posh/platform"
 	"oh-my-posh/properties"
 	"oh-my-posh/segments"
 	"oh-my-posh/shell"
 	"oh-my-posh/template"
+
+	c "golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 // Segment represent a single segment and it's configuration
@@ -32,11 +35,14 @@ type Segment struct {
 	TemplatesLogic      template.Logic `json:"templates_logic,omitempty"`
 	Properties          properties.Map `json:"properties,omitempty"`
 	Interactive         bool           `json:"interactive,omitempty"`
+	Alias               string         `json:"alias,omitempty"`
+	MaxWidth            int            `json:"max_width,omitempty"`
+	MinWidth            int            `json:"min_width,omitempty"`
 
+	env             platform.Environment
 	writer          SegmentWriter
 	Enabled         bool `json:"-"`
 	text            string
-	env             environment.Environment
 	backgroundCache string
 	foregroundCache string
 }
@@ -54,7 +60,7 @@ type SegmentTiming struct {
 type SegmentWriter interface {
 	Enabled() bool
 	Template() string
-	Init(props properties.Properties, env environment.Environment)
+	Init(props properties.Properties, env platform.Environment)
 }
 
 // SegmentStyle the style of segment, for more information, see the constants
@@ -95,10 +101,14 @@ const (
 	CMAKE SegmentType = "cmake"
 	// CMD writes the output of a shell command
 	CMD SegmentType = "command"
+	// CONNECTION writes a connection's information
+	CONNECTION SegmentType = "connection"
 	// CRYSTAL writes the active crystal version
 	CRYSTAL SegmentType = "crystal"
 	// DART writes the active dart version
 	DART SegmentType = "dart"
+	// DENO writes the active deno version
+	DENO SegmentType = "deno"
 	// DOTNET writes which dotnet version is currently active
 	DOTNET SegmentType = "dotnet"
 	// EXECUTIONTIME writes the execution time of the last run command
@@ -113,6 +123,8 @@ const (
 	GCP SegmentType = "gcp"
 	// GIT represents the git status and information
 	GIT SegmentType = "git"
+	// GITVERSION represents the gitversion information
+	GITVERSION SegmentType = "gitversion"
 	// GOLANG writes which go version is currently active
 	GOLANG SegmentType = "go"
 	// HASKELL segment
@@ -153,8 +165,6 @@ const (
 	PHP SegmentType = "php"
 	// PLASTIC represents the plastic scm status and information
 	PLASTIC SegmentType = "plastic"
-	// POSHGIT writes the posh git prompt
-	POSHGIT SegmentType = "poshgit"
 	// Project version
 	PROJECT SegmentType = "project"
 	// PYTHON writes the virtual env name
@@ -191,12 +201,12 @@ const (
 	UI5TOOLING SegmentType = "ui5tooling"
 	// WAKATIME writes tracked time spend in dev editors
 	WAKATIME SegmentType = "wakatime"
-	// WIFI writes details about the current WIFI connection
-	WIFI SegmentType = "wifi"
 	// WINREG queries the Windows registry.
 	WINREG SegmentType = "winreg"
 	// WITHINGS queries the Withings API.
 	WITHINGS SegmentType = "withings"
+	// XMAKE write the xmake version if xmake.lua is present
+	XMAKE SegmentType = "xmake"
 	// YTM writes YouTube Music information and status
 	YTM SegmentType = "ytm"
 )
@@ -263,7 +273,7 @@ func (segment *Segment) background() string {
 	return segment.backgroundCache
 }
 
-func (segment *Segment) mapSegmentWithWriter(env environment.Environment) error {
+func (segment *Segment) mapSegmentWithWriter(env platform.Environment) error {
 	segment.env = env
 	functions := map[SegmentType]SegmentWriter{
 		ANGULAR:       &segments.Angular{},
@@ -276,9 +286,11 @@ func (segment *Segment) mapSegmentWithWriter(env environment.Environment) error 
 		CF:            &segments.Cf{},
 		CFTARGET:      &segments.CfTarget{},
 		CMD:           &segments.Cmd{},
+		CONNECTION:    &segments.Connection{},
 		CRYSTAL:       &segments.Crystal{},
 		CMAKE:         &segments.Cmake{},
 		DART:          &segments.Dart{},
+		DENO:          &segments.Deno{},
 		DOTNET:        &segments.Dotnet{},
 		EXECUTIONTIME: &segments.Executiontime{},
 		EXIT:          &segments.Exit{},
@@ -286,6 +298,7 @@ func (segment *Segment) mapSegmentWithWriter(env environment.Environment) error 
 		FOSSIL:        &segments.Fossil{},
 		GCP:           &segments.Gcp{},
 		GIT:           &segments.Git{},
+		GITVERSION:    &segments.GitVersion{},
 		GOLANG:        &segments.Golang{},
 		HASKELL:       &segments.Haskell{},
 		IPIFY:         &segments.IPify{},
@@ -306,7 +319,6 @@ func (segment *Segment) mapSegmentWithWriter(env environment.Environment) error 
 		PERL:          &segments.Perl{},
 		PHP:           &segments.Php{},
 		PLASTIC:       &segments.Plastic{},
-		POSHGIT:       &segments.PoshGit{},
 		PROJECT:       &segments.Project{},
 		PYTHON:        &segments.Python{},
 		R:             &segments.R{},
@@ -325,9 +337,9 @@ func (segment *Segment) mapSegmentWithWriter(env environment.Environment) error 
 		TIME:          &segments.Time{},
 		UI5TOOLING:    &segments.UI5Tooling{},
 		WAKATIME:      &segments.Wakatime{},
-		WIFI:          &segments.Wifi{},
 		WINREG:        &segments.WindowsRegistry{},
 		WITHINGS:      &segments.Withings{},
+		XMAKE:         &segments.XMake{},
 		YTM:           &segments.Ytm{},
 	}
 	if segment.Properties == nil {
@@ -345,7 +357,7 @@ func (segment *Segment) string() string {
 	var templatesResult string
 	if !segment.Templates.Empty() {
 		templatesResult = segment.Templates.Resolve(segment.writer, segment.env, "", segment.TemplatesLogic)
-		if len(templatesResult) != 0 && len(segment.Template) == 0 {
+		if len(segment.Template) == 0 {
 			return templatesResult
 		}
 	}
@@ -365,7 +377,7 @@ func (segment *Segment) string() string {
 	return text
 }
 
-func (segment *Segment) SetEnabled(env environment.Environment) {
+func (segment *Segment) SetEnabled(env platform.Environment) {
 	defer func() {
 		err := recover()
 		if err == nil {
@@ -380,9 +392,25 @@ func (segment *Segment) SetEnabled(env environment.Environment) {
 	if err != nil || !segment.shouldIncludeFolder() {
 		return
 	}
+	// validate toggles
+	if toggles, OK := segment.env.Cache().Get(platform.TOGGLECACHE); OK && len(toggles) > 0 {
+		list := strings.Split(toggles, ",")
+		for _, toggle := range list {
+			if SegmentType(toggle) == segment.Type {
+				return
+			}
+		}
+	}
+	if shouldHideForWidth(segment.env, segment.MinWidth, segment.MaxWidth) {
+		return
+	}
 	if segment.writer.Enabled() {
 		segment.Enabled = true
-		env.TemplateCache().AddSegmentData(string(segment.Type), segment.writer)
+		name := segment.Alias
+		if len(name) == 0 {
+			name = c.Title(language.English).String(string(segment.Type))
+		}
+		env.TemplateCache().AddSegmentData(name, segment.writer)
 	}
 }
 

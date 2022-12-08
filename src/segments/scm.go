@@ -2,9 +2,14 @@ package segments
 
 import (
 	"fmt"
-	"oh-my-posh/environment"
+	"oh-my-posh/platform"
 	"oh-my-posh/properties"
 	"strings"
+)
+
+const (
+	// Fallback to native command
+	NativeFallback properties.Property = "native_fallback"
 )
 
 // ScmStatus represents part of the status of a repository
@@ -42,9 +47,10 @@ func (s *ScmStatus) String() string {
 
 type scm struct {
 	props properties.Properties
-	env   environment.Environment
+	env   platform.Environment
 
 	IsWslSharedPath bool
+	CommandMissing  bool
 	Dir             string // actual repo root directory
 
 	workingDir string
@@ -62,7 +68,7 @@ const (
 	FullBranchPath properties.Property = "full_branch_path"
 )
 
-func (s *scm) Init(props properties.Properties, env environment.Environment) {
+func (s *scm) Init(props properties.Properties, env platform.Environment) {
 	s.props = props
 	s.env = env
 }
@@ -94,7 +100,7 @@ func (s *scm) FileContents(folder, file string) string {
 }
 
 func (s *scm) convertToWindowsPath(path string) string {
-	if s.env.GOOS() == environment.WINDOWS || s.IsWslSharedPath {
+	if s.env.GOOS() == platform.WINDOWS || s.IsWslSharedPath {
 		return s.env.ConvertToWindowsPath(path)
 	}
 	return path
@@ -107,13 +113,28 @@ func (s *scm) convertToLinuxPath(path string) string {
 	return s.env.ConvertToLinuxPath(path)
 }
 
-func (s *scm) getCommand(command string) string {
+func (s *scm) hasCommand(command string) bool {
 	if len(s.command) > 0 {
-		return s.command
+		return true
 	}
-	s.command = command
-	if s.env.GOOS() == environment.WINDOWS || s.IsWslSharedPath {
-		s.command += ".exe"
+	// when in a WSL shared folder, we must use command.exe and convert paths accordingly
+	// for worktrees, stashes, and path to work
+	s.IsWslSharedPath = s.env.InWSLSharedDrive()
+	if s.env.GOOS() == platform.WINDOWS || s.IsWslSharedPath {
+		command += ".exe"
 	}
-	return s.command
+	if s.env.HasCommand(command) {
+		s.command = command
+		return true
+	}
+	s.CommandMissing = true
+	// only use the native fallback when set by the user
+	if s.IsWslSharedPath && s.props.GetBool(NativeFallback, false) {
+		command = strings.TrimSuffix(command, ".exe")
+		if s.env.HasCommand(command) {
+			s.command = command
+			return true
+		}
+	}
+	return false
 }

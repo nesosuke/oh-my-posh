@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"oh-my-posh/color"
 	"oh-my-posh/console"
-	"oh-my-posh/environment"
+	"oh-my-posh/platform"
 	"oh-my-posh/shell"
 	"oh-my-posh/template"
 	"strings"
@@ -13,7 +13,7 @@ import (
 
 type Engine struct {
 	Config       *Config
-	Env          environment.Environment
+	Env          platform.Environment
 	Writer       color.Writer
 	Ansi         *color.Ansi
 	ConsoleTitle *console.Title
@@ -85,7 +85,7 @@ func (e *Engine) printPWD() {
 	cwd := e.Env.Pwd()
 	// Backwards compatibility for deprecated OSC99
 	if e.Config.OSC99 {
-		e.writeANSI(e.Ansi.ConsolePwd(color.OSC99, "", cwd))
+		e.writeANSI(e.Ansi.ConsolePwd(color.OSC99, "", "", cwd))
 		return
 	}
 	// Allow template logic to define when to enable the PWD (when supported)
@@ -97,8 +97,9 @@ func (e *Engine) printPWD() {
 	if err != nil || len(pwdType) == 0 {
 		return
 	}
+	user := e.Env.User()
 	host, _ := e.Env.Host()
-	e.writeANSI(e.Ansi.ConsolePwd(pwdType, host, cwd))
+	e.writeANSI(e.Ansi.ConsolePwd(pwdType, user, host, cwd))
 }
 
 func (e *Engine) newline() {
@@ -130,7 +131,7 @@ func (e *Engine) shouldFill(block *Block, length int) (string, bool) {
 
 func (e *Engine) renderBlock(block *Block) {
 	defer func() {
-		// Due to a bug in Powershell, the end of the line needs to be cleared.
+		// Due to a bug in PowerShell, the end of the line needs to be cleared.
 		// If this doesn't happen, the portion after the prompt gets colored in the background
 		// color of the line above the new input line. Clearing the line fixes this,
 		// but can hopefully one day be removed when this is resolved natively.

@@ -3,7 +3,8 @@ package cli
 import (
 	"fmt"
 	"oh-my-posh/color"
-	"oh-my-posh/environment"
+	"oh-my-posh/platform"
+	"strings"
 	"time"
 
 	color2 "github.com/gookit/color"
@@ -12,7 +13,7 @@ import (
 
 // getCmd represents the get command
 var getCmd = &cobra.Command{
-	Use:   "get [shell|millis|accent]",
+	Use:   "get [shell|millis|accent|toggles|width]",
 	Short: "Get a value from oh-my-posh",
 	Long: `Get a value from oh-my-posh.
 
@@ -20,11 +21,15 @@ This command is used to get the value of the following variables:
 
 - shell
 - millis
-- accent`,
+- accent
+- toggles
+- width`,
 	ValidArgs: []string{
 		"millis",
 		"shell",
 		"accent",
+		"toggles",
+		"width",
 	},
 	Args: NoArgsOrOneValidArg,
 	Run: func(cmd *cobra.Command, args []string) {
@@ -32,8 +37,11 @@ This command is used to get the value of the following variables:
 			_ = cmd.Help()
 			return
 		}
-		env := &environment.ShellEnvironment{
+		env := &platform.Shell{
 			Version: cliVersion,
+			CmdFlags: &platform.Flags{
+				Shell: shellName,
+			},
 		}
 		env.Init()
 		defer env.Close()
@@ -50,6 +58,28 @@ This command is used to get the value of the following variables:
 			}
 			accent := color2.RGB(rgb.R, rgb.G, rgb.B)
 			fmt.Println("#" + accent.Hex())
+		case "toggles":
+			cache := env.Cache()
+			togglesCache, _ := cache.Get(platform.TOGGLECACHE)
+			var toggles []string
+			if len(togglesCache) != 0 {
+				toggles = strings.Split(togglesCache, ",")
+			}
+			if len(toggles) == 0 {
+				fmt.Println("No segments are toggled off")
+				return
+			}
+			fmt.Println("Toggled off segments:")
+			for _, toggle := range toggles {
+				fmt.Println("- " + toggle)
+			}
+		case "width":
+			width, err := env.TerminalWidth()
+			if err != nil {
+				fmt.Println("error getting terminal width:", err.Error())
+				return
+			}
+			fmt.Println(width)
 		default:
 			_ = cmd.Help()
 		}
@@ -57,5 +87,6 @@ This command is used to get the value of the following variables:
 }
 
 func init() { //nolint:gochecknoinits
-	rootCmd.AddCommand(getCmd)
+	RootCmd.AddCommand(getCmd)
+	getCmd.Flags().StringVar(&shellName, "shell", "", "the shell to print for")
 }

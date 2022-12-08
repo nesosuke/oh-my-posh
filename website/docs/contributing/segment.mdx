@@ -15,13 +15,13 @@ You can use the following template as a guide.
 package segments
 
 import (
-  "oh-my-posh/environment"
+  "oh-my-posh/platform"
   "oh-my-posh/properties"
 )
 
 type New struct {
     props   properties.Properties
-    env     environment.Environment
+    env     platform.Environment
 
     Text string
 }
@@ -39,7 +39,7 @@ func (n *new) Template() string {
     return " {{.Text}} world "
 }
 
-func (n *new) Init(props properties.Properties, env environment.Environment) {
+func (n *new) Init(props properties.Properties, env platform.Environment) {
     n.props = props
     n.env = env
 
@@ -85,7 +85,7 @@ go build -o $GOPATH/bin/oh-my-posh
 
 ## Add the documentation
 
-Create a new `markdown` file underneath the [`docs/docs/segments`][docs] folder called `new.md`.
+Create a new `markdown` file underneath the [`website/docs/segments`][docs] folder called `new.md`.
 Use the following template as a guide.
 
 ````markdown
@@ -116,7 +116,9 @@ Display something new.
 
 ## Properties
 
-- newprop: `string` - the new text to show - defaults to `\uEFF1`
+| Name      | Type     | Description                                 |
+| --------- | -------- | ------------------------------------------- |
+| `newprop` | `string` | the new text to show - defaults to `\uEFF1` |
 ````
 
 ## Map the new documentation in the sidebar
@@ -165,7 +167,7 @@ At `$.definitions.segment.allOf`, add your segment details:
 
 And be patient, I'm going as fast as I can 🏎
 
-[segment-go]: https://github.com/JanDeDobbeleer/oh-my-posh/blob/main/segment.go
+[segment-go]: https://github.com/JanDeDobbeleer/oh-my-posh/blob/main/src/engine/segment.go
 [themes]: https://github.com/JanDeDobbeleer/oh-my-posh/tree/main/themes
 [docs]: https://github.com/JanDeDobbeleer/oh-my-posh/tree/main/website/docs/segments
 [sidebars]: https://github.com/JanDeDobbeleer/oh-my-posh/blob/main/website/sidebars.js

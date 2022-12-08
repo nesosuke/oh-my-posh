@@ -1,7 +1,7 @@
 package segments
 
 import (
-	"oh-my-posh/environment"
+	"oh-my-posh/platform"
 	"oh-my-posh/properties"
 	"path/filepath"
 )
@@ -14,7 +14,7 @@ func (a *Angular) Template() string {
 	return languageTemplate
 }
 
-func (a *Angular) Init(props properties.Properties, env environment.Environment) {
+func (a *Angular) Init(props properties.Properties, env platform.Environment) {
 	a.language = language{
 		env:        env,
 		props:      props,
@@ -34,5 +34,6 @@ func (a *Angular) Enabled() bool {
 }
 
 func (a *Angular) getVersion() (string, error) {
+	// tested by nx_test.go
 	return getNodePackageVersion(a.language.env, filepath.Join("@angular", "core"))
 }

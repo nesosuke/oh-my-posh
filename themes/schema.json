@@ -225,6 +225,7 @@
             "angular",
             "battery",
             "command",
+            "connection",
             "crystal",
             "cds",
             "cf",
@@ -238,6 +239,7 @@
             "fossil",
             "gcp",
             "git",
+            "gitversion",
             "go",
             "haskell",
             "ipify",
@@ -255,7 +257,6 @@
             "path",
             "perl",
             "python",
-            "poshgit",
             "php",
             "plastic",
             "project",
@@ -275,9 +276,9 @@
             "terraform",
             "ui5tooling",
             "wakatime",
-            "wifi",
             "winreg",
             "withings",
+            "xmake",
             "ytm"
           ]
         },
@@ -317,6 +318,18 @@
           "description": "https://ohmyposh.dev/docs/configuration/segment#templates",
           "enum": ["first_match", "join"]
         },
+		"max_cols": {
+			"type": "integer",
+			"title": "if the terminal width exceeds this value, the segment will be hidden",
+			"description": "https://ohmyposh.dev/docs/configuration/segment#max_cols",
+			"default": 0
+		},
+		"min_cols": {
+			"type": "integer",
+			"title": "if the terminal width is inferior than this value, the segment will be hidden",
+			"description": "https://ohmyposh.dev/docs/configuration/segment#min_cols",
+			"default": 0
+		},
         "properties": {
           "type": "object",
           "title": "Segment Properties, used to change behavior/displaying",
@@ -358,6 +371,12 @@
           "title": "Allow the use of interactive prompt escape sequences",
           "description": "https://ohmyposh.dev/docs/configuration/segment#interactive",
           "default": false
+        },
+        "alias": {
+          "type": "string",
+          "title": "Give the segment an alias for use in templates",
+          "description": "https://ohmyposh.dev/docs/configuration/segment#alias",
+          "default": ""
         }
       },
       "allOf": [
@@ -574,6 +593,55 @@
           "if": {
             "properties": {
               "type": {
+                "const": "connection"
+              }
+            }
+          },
+          "then": {
+            "title": "Connection Segment",
+            "description": "https://ohmyposh.dev/docs/segments/connection",
+            "properties": {
+              "properties": {
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "title": "Connection type",
+                    "description": "The connection type to display",
+                    "enum": [
+                      "ethernet",
+                      "wifi",
+                      "cellular",
+                      "bluetooth"
+                    ],
+                    "default": "wifi|ethernet"
+                  },
+                  "unit": {
+                    "type": "string",
+                    "title": "Transfer speed unit",
+                    "enum": [
+                      "none",
+                      "b",
+                      "bps",
+                      "K",
+                      "Kbps",
+                      "M",
+                      "Mbps",
+                      "G",
+                      "Gbps",
+                      "T",
+                      "Tbps"
+                    ],
+                    "default": "none"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
                 "const": "cmake"
               }
             }
@@ -743,6 +811,12 @@
                     "type": "boolean",
                     "title": "Display Upstream Icon",
                     "description": "Display upstream icon or not",
+                    "default": false
+                  },
+                  "fetch_bare_info": {
+                    "type": "boolean",
+                    "title": "Fetch info when in a bare repo",
+                    "description": "Fetch info when in a bare repo or not",
                     "default": false
                   },
                   "branch_icon": {
@@ -935,6 +1009,37 @@
                   },
                   "missing_command_text": {
                     "$ref": "#/definitions/missing_command_text"
+                  },
+                  "version_url_template": {
+                    "$ref": "#/definitions/version_url_template"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "deno"
+              }
+            }
+          },
+          "then": {
+            "title": "Deno CLI Segment",
+            "description": "https://ohmyposh.dev/docs/segments/deno",
+            "properties": {
+              "properties": {
+                "properties": {
+                  "home_enabled": {
+                    "$ref": "#/definitions/home_enabled"
+                  },
+                  "fetch_version": {
+                    "$ref": "#/definitions/fetch_version"
+                  },
+                  "display_mode": {
+                    "$ref": "#/definitions/display_mode"
                   },
                   "version_url_template": {
                     "$ref": "#/definitions/version_url_template"
@@ -1150,6 +1255,37 @@
           "then": {
             "title": "Rust Segment",
             "description": "https://ohmyposh.dev/docs/segments/rust",
+            "properties": {
+              "properties": {
+                "properties": {
+                  "home_enabled": {
+                    "$ref": "#/definitions/home_enabled"
+                  },
+                  "fetch_version": {
+                    "$ref": "#/definitions/fetch_version"
+                  },
+                  "display_mode": {
+                    "$ref": "#/definitions/display_mode"
+                  },
+                  "missing_command_text": {
+                    "$ref": "#/definitions/missing_command_text"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "xmake"
+              }
+            }
+          },
+          "then": {
+            "title": "XMake Segment",
+            "description": "https://ohmyposh.dev/docs/segments/xmake",
             "properties": {
               "properties": {
                 "properties": {
@@ -1443,6 +1579,12 @@
                     "description": "The icon to use for Opensuse",
                     "default": "\uF314"
                   },
+                  "redhat": {
+                    "type": "string",
+                    "title": "Redhat Icon",
+                    "description": "The icon to use for Redhat",
+                    "default": "\uF316"
+                  },
                   "sabayon": {
                     "type": "string",
                     "title": "Sabayon Icon",
@@ -1460,6 +1602,18 @@
                     "title": "Ubuntu Icon",
                     "description": "The icon to use for Ubuntu",
                     "default": "\uF31b"
+                  },
+                  "rocky": {
+                    "type": "string",
+                    "title": "Rocky Icon",
+                    "description": "The icon to use for Rocky",
+                    "default": "\uF32B"
+                  },
+                  "alma": {
+                    "type": "string",
+                    "title": "Alma Icon",
+                    "description": "The icon to use for Alma",
+                    "default": "\uF31D"
                   }
                 }
               }
@@ -1919,19 +2073,6 @@
           "if": {
             "properties": {
               "type": {
-                "const": "poshgit"
-              }
-            }
-          },
-          "then": {
-            "title": "Posh-Git Segment",
-            "description": "https://ohmyposh.dev/docs/segments/poshgit"
-          }
-        },
-        {
-          "if": {
-            "properties": {
-              "type": {
                 "const": "sysinfo"
               }
             }
@@ -2139,19 +2280,6 @@
                 }
               }
             }
-          }
-        },
-        {
-          "if": {
-            "properties": {
-              "type": {
-                "const": "wifi"
-              }
-            }
-          },
-          "then": {
-            "title": "WiFi Segment",
-            "description": "https://ohmyposh.dev/docs/segments/wifi"
           }
         },
         {
@@ -2740,6 +2868,17 @@
             "title": "GCP Segment",
             "description": "https://ohmyposh.dev/docs/segments/gcp"
           }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": { "const": "gitversion" }
+            }
+          },
+          "then": {
+            "title": "Display GitVersion segment",
+            "description": "https://ohmyposh.dev/docs/segments/gitversion"
+          }
         }
       ]
     }
@@ -2754,7 +2893,7 @@
     },
     "pwd": {
       "type": "string",
-      "title": "Enable OSC99/7",
+      "title": "Enable OSC99/7/51",
       "description": "https://ohmyposh.dev/docs/configuration/overview#general-settings",
       "default": ""
     },
@@ -2832,6 +2971,27 @@
       "patternProperties": {
         ".*": {
           "$ref": "#/definitions/color"
+        }
+      }
+    },
+    "palettes": {
+      "type": "object",
+      "title": "Palettes",
+      "description": "https://ohmyposh.dev/docs/configuration/colors#palettes",
+      "default": {},
+      "properties": {
+        "template": {
+          "type": "string",
+          "title": "Prompt Template"
+        },
+        "list": {
+          "type": "object",
+          "title": "List of palettes",
+          "patternProperties": {
+            ".*": {
+              "$ref": "#/properties/palette"
+            }
+          }
         }
       }
     },

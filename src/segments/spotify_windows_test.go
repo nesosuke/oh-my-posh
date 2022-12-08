@@ -3,8 +3,8 @@
 package segments
 
 import (
-	"errors"
 	"oh-my-posh/mock"
+	"oh-my-posh/platform"
 	"oh-my-posh/properties"
 	"testing"
 
@@ -40,7 +40,7 @@ func TestSpotifyWindowsNative(t *testing.T) {
 	for _, tc := range cases {
 		env := new(mock.MockedEnvironment)
 		env.On("QueryWindowTitles", "spotify.exe", `^(Spotify.*)|(.*\s-\s.*)$`).Return(tc.Title, tc.Error)
-		env.On("QueryWindowTitles", "msedge.exe", `^(Spotify.*)`).Return("", errors.New("not implemented"))
+		env.On("QueryWindowTitles", "msedge.exe", `^(Spotify.*)`).Return("", &platform.NotImplemented{})
 		s := &Spotify{
 			env:   env,
 			props: properties.Map{},
@@ -74,7 +74,7 @@ func TestSpotifyWindowsPWA(t *testing.T) {
 	}
 	for _, tc := range cases {
 		env := new(mock.MockedEnvironment)
-		env.On("QueryWindowTitles", "spotify.exe", "^(Spotify.*)|(.*\\s-\\s.*)$").Return("", errors.New("not implemented"))
+		env.On("QueryWindowTitles", "spotify.exe", "^(Spotify.*)|(.*\\s-\\s.*)$").Return("", &platform.NotImplemented{})
 		env.On("QueryWindowTitles", "msedge.exe", "^(Spotify.*)").Return(tc.Title, tc.Error)
 		s := &Spotify{
 			env:   env,

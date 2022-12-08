@@ -2,13 +2,14 @@ package color
 
 import (
 	"fmt"
-	"oh-my-posh/environment"
+	"oh-my-posh/platform"
 	"strconv"
+	"strings"
 
 	"github.com/gookit/color"
 )
 
-func MakeColors(palette Palette, cacheEnabled bool, accentColor string, env environment.Environment) (colors AnsiColors) {
+func MakeColors(palette Palette, cacheEnabled bool, accentColor string, env platform.Environment) (colors AnsiColors) {
 	defaultColors := &DefaultColors{}
 	defaultColors.SetAccentColor(env, accentColor)
 	colors = defaultColors
@@ -77,6 +78,14 @@ func (d *DefaultColors) AnsiColorFromString(colorString string, isBackground boo
 	colorFromName, err := getAnsiColorFromName(colorString, isBackground)
 	if err == nil {
 		return colorFromName
+	}
+	if !strings.HasPrefix(colorString, "#") {
+		val, err := strconv.ParseUint(colorString, 10, 64)
+		if err != nil || val > 255 {
+			return emptyAnsiColor
+		}
+		c256 := color.C256(uint8(val), isBackground)
+		return AnsiColor(c256.RGBColor().String())
 	}
 	style := color.HEX(colorString, isBackground)
 	if !style.IsEmpty() {

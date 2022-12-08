@@ -1,8 +1,8 @@
 package engine
 
 import (
-	"oh-my-posh/environment"
 	"oh-my-posh/mock"
+	"oh-my-posh/platform"
 	"oh-my-posh/properties"
 	"testing"
 
@@ -88,7 +88,7 @@ func (m *MockedWriter) Template() string {
 	return m.template
 }
 
-func (m *MockedWriter) Init(props properties.Properties, env environment.Environment) {}
+func (m *MockedWriter) Init(props properties.Properties, env platform.Environment) {}
 
 func TestIconOverride(t *testing.T) {
 	cases := []struct {
@@ -195,7 +195,7 @@ func TestSegmentTemplateMigration(t *testing.T) {
 	}{
 		{
 			Case:     "GIT",
-			Expected: " {{ .HEAD }} {{ .BranchStatus }}{{ if .Working.Changed }} working {{ .Working.String }}{{ end }}{{ if and (.Staging.Changed) (.Working.Changed) }} and{{ end }}{{ if .Staging.Changed }} staged {{ .Staging.String }}{{ end }}{{ if gt .StashCount 0}} stash {{ .StashCount }}{{ end }}{{ if gt .WorktreeCount 0}} worktree {{ .WorktreeCount }}{{ end }} ", //nolint: lll
+			Expected: " {{ .HEAD }}{{if .BranchStatus }} {{ .BranchStatus }}{{ end }}{{ if .Working.Changed }} working {{ .Working.String }}{{ end }}{{ if and (.Staging.Changed) (.Working.Changed) }} and{{ end }}{{ if .Staging.Changed }} staged {{ .Staging.String }}{{ end }}{{ if gt .StashCount 0}} stash {{ .StashCount }}{{ end }}{{ if gt .WorktreeCount 0}} worktree {{ .WorktreeCount }}{{ end }} ", //nolint: lll
 			Type:     GIT,
 			Props: properties.Map{
 				"local_working_icon":    " working ",
@@ -207,7 +207,7 @@ func TestSegmentTemplateMigration(t *testing.T) {
 		},
 		{
 			Case:     "GIT - Staging and Working Color",
-			Expected: " {{ .HEAD }} {{ .BranchStatus }}{{ if .Working.Changed }} working <#123456>{{ .Working.String }}</>{{ end }}{{ if and (.Staging.Changed) (.Working.Changed) }} and{{ end }}{{ if .Staging.Changed }} staged <#123456>{{ .Staging.String }}</>{{ end }}{{ if gt .StashCount 0}} stash {{ .StashCount }}{{ end }}{{ if gt .WorktreeCount 0}} worktree {{ .WorktreeCount }}{{ end }} ", //nolint: lll
+			Expected: " {{ .HEAD }}{{if .BranchStatus }} {{ .BranchStatus }}{{ end }}{{ if .Working.Changed }} working <#123456>{{ .Working.String }}</>{{ end }}{{ if and (.Staging.Changed) (.Working.Changed) }} and{{ end }}{{ if .Staging.Changed }} staged <#123456>{{ .Staging.String }}</>{{ end }}{{ if gt .StashCount 0}} stash {{ .StashCount }}{{ end }}{{ if gt .WorktreeCount 0}} worktree {{ .WorktreeCount }}{{ end }} ", //nolint: lll
 			Type:     GIT,
 			Props: properties.Map{
 				"local_working_icon":    " working ",
